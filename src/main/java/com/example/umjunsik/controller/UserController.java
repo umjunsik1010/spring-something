@@ -1,33 +1,58 @@
 package com.example.umjunsik.controller;
 
 import com.example.umjunsik.domain.User;
-import com.example.umjunsik.dto.UserRegistrationRequestDto;
-import com.example.umjunsik.dto.UserSimpleResponseDto;
+import com.example.umjunsik.dto.request.UserUpdateRequestDto;
+import com.example.umjunsik.dto.response.UserDetailResponseDto;
+import com.example.umjunsik.dto.response.UserSimpleResponseDto;
+import com.example.umjunsik.service.AuthService;
 import com.example.umjunsik.service.UserService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 public class UserController {
+    private final AuthService authService;
     private final UserService userService;
 
     @Autowired
-    public UserController(UserService userService) {
+    public UserController(AuthService authService, UserService userService) {
+        this.authService = authService;
         this.userService = userService;
     }
 
-    @PostMapping("/auth/register")
-    public ResponseEntity<UserSimpleResponseDto> registerUser(@RequestBody UserRegistrationRequestDto userRegistrationRequestDto) {
-        User user = new User(
-                userRegistrationRequestDto.getUsername(),
-                userRegistrationRequestDto.getPassword(),
-                userRegistrationRequestDto.getName()
-        );
-        UserSimpleResponseDto savedUser = userService.saveUser(user);
 
-        return ResponseEntity.ok(savedUser);
+    @GetMapping("/users")
+    public ResponseEntity<List<UserSimpleResponseDto>> getUsers(@RequestParam(required = false) String username, HttpServletRequest request) {
+        User currentUser = authService.getCurrentUser(request);
+
+        List<UserSimpleResponseDto> users;
+        if (username == null || username.isEmpty()) {
+            users = userService.getAllUsers(currentUser);
+        } else {
+            users = userService.getUserByUsername(currentUser, username);
+        }
+
+        return ResponseEntity.ok(users);
+    }
+
+
+    @PutMapping("/users/profile")
+    public ResponseEntity<UserDetailResponseDto> updateUser(@RequestBody UserUpdateRequestDto userUpdateRequestDto, HttpServletRequest request) {
+        User currentUser = authService.getCurrentUser(request);
+        UserDetailResponseDto updated = userService.updateUser(currentUser, userUpdateRequestDto);
+        return ResponseEntity.ok(updated);
+    }
+
+    @GetMapping("/users/{userId}/profile")
+    public ResponseEntity<UserDetailResponseDto> getUserProfile(@PathVariable Long userId, HttpServletRequest request) {
+        User currentUser = authService.getCurrentUser(request);
+
+        UserDetailResponseDto userDetailResponseDto = userService.getUserDetail(currentUser, userId);
+
+        return ResponseEntity.ok(userDetailResponseDto);
     }
 }

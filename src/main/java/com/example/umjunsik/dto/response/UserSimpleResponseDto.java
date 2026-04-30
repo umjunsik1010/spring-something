@@ -1,4 +1,4 @@
-package com.example.umjunsik.dto;
+package com.example.umjunsik.dto.response;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
