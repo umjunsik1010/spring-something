@@ -4,6 +4,7 @@ import com.example.umjunsik.domain.User;
 import com.example.umjunsik.dto.request.UserUpdateRequestDto;
 import com.example.umjunsik.dto.response.UserDetailResponseDto;
 import com.example.umjunsik.dto.response.UserSimpleResponseDto;
+import com.example.umjunsik.repository.PostRepository;
 import com.example.umjunsik.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -14,20 +15,27 @@ import java.util.List;
 
 @Service
 public class UserService {
+
     private final UserRepository userRepository;
+    private final ImageService imageService;
+    private final PostRepository postRepository;
 
     @Autowired
-    public UserService(UserRepository userRepository) {
+    public UserService(UserRepository userRepository, ImageService imageService, PostRepository postRepository) {
         this.userRepository = userRepository;
+        this.imageService = imageService;
+        this.postRepository  = postRepository;
     }
 
     public UserSimpleResponseDto convertUserToSimpleDto(User currentUser, User targetUser) {
+        String imageUrl = targetUser.getImageUrl();
+        String imageData = imageService.encodeImageToBase64(System.getProperty("user.dir") + "/src/main/resources/static/" + imageUrl);
 
         return new UserSimpleResponseDto(
                 targetUser.getId(),
                 targetUser.getUsername(),
                 targetUser.getName(),
-                null,
+                imageData,
                 false
         );
     }
@@ -89,15 +97,18 @@ public class UserService {
     }
 
     public UserDetailResponseDto convertUserToDetailDto(User currentUser, User targetUser) {
+        String imageUrl = targetUser.getImageUrl();
+        String imageData = imageService.encodeImageToBase64(System.getProperty("user.dir") + "/src/main/resources/static/" + imageUrl);
+
         return new UserDetailResponseDto(
                 targetUser.getId(),
                 targetUser.getUsername(),
                 targetUser.getName(),
-                null,
+                imageData,
                 false,
                 targetUser.getBio(),
                 targetUser.getJoinedAt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd hh:mm")),
-                0L,
+                postRepository.countByUser(targetUser),
                 0L,
                 0L
         );
