@@ -3,8 +3,10 @@ package com.example.umjunsik.controller;
 import com.example.umjunsik.domain.Post;
 import com.example.umjunsik.domain.User;
 import com.example.umjunsik.dto.response.PostResponseDto;
+import com.example.umjunsik.dto.response.UserSimpleResponseDto;
 import com.example.umjunsik.service.AuthService;
 import com.example.umjunsik.service.ImageService;
+import com.example.umjunsik.service.LikeService;
 import com.example.umjunsik.service.PostService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,12 +20,14 @@ import java.util.List;
 @RestController
 public class PostController {
     private final AuthService authService;
+    private final LikeService likeService;
     private final ImageService imageService;
     private final PostService postService;
 
     @Autowired
-    public PostController(AuthService authService, ImageService imageService, PostService postService) {
+    public PostController(AuthService authService, LikeService likeService, ImageService imageService, PostService postService) {
         this.authService = authService;
+        this.likeService = likeService;
         this.imageService = imageService;
         this.postService = postService;
     }
@@ -43,5 +47,29 @@ public class PostController {
     public ResponseEntity<List<PostResponseDto>> getPostsByUser(@PathVariable Long userId) {
         List<PostResponseDto> posts = postService.getPostsByUser(userId);
         return ResponseEntity.ok(posts);
+    }
+
+    @PostMapping("/posts/{postId}/like")
+    public ResponseEntity<Void> likePost(@PathVariable Long postId, HttpServletRequest request) {
+        User currentUser = authService.getCurrentUser(request);
+
+        likeService.likePost(currentUser, postId);
+        return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping("/posts/{postId}/like")
+    public ResponseEntity<Void> unlikePost(HttpServletRequest request, @PathVariable Long postId) {
+        User currentUser = authService.getCurrentUser(request);
+
+        likeService.unlikePost(currentUser, postId);
+        return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/posts/{postId}/like")
+    public ResponseEntity<List<UserSimpleResponseDto>> getUsersWhoLikedPost(@PathVariable Long postId, HttpServletRequest request) {
+        User currentUser = authService.getCurrentUser(request);
+
+        List<UserSimpleResponseDto> usersWhoLikedPost = likeService.getUsersWhoLikedPost(currentUser, postId);
+        return ResponseEntity.ok(usersWhoLikedPost);
     }
 }
